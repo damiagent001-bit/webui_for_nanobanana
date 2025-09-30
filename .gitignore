@@ -205,3 +205,47 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# OS 生成的垃圾文件
+.DS_Store
+Thumbs.db
+
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*.so
+
+# 虚拟环境
+.venv/
+env/
+venv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 编译/打包产物
+dist/
+build/
+*.egg-info/
+
+# IDE / 编辑器配置
+.vscode/
+.idea/
+*.swp
+
+# 日志文件
+*.log
+
+# 环境变量配置
+*.env
+
+# 项目输出目录 - 忽略输出目录下的文件，但保留目录结构
+outputs/images/*
+outputs/files/*
+outputs/videos/*
+# 保留 logs/ 和 outputs/ 目录结构，但忽略其中的文件内容
+!outputs/.gitkeep
+!logs/.gitkeep
