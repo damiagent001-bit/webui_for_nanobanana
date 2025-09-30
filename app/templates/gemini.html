@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Gemini - 大秘模型调用平台</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .main-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%);
+            border-radius: 32px;
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-field {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-secondary.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s ease;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+        
+        .api-key-input {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            font-size: 18px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .api-key-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .api-key-input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+        
+        .api-key-valid {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .logo-image {
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
+            display: block;
+            object-fit: cover;
+        }
+        
+        .logo-image:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 主要内容区域 -->
+    <div class="min-h-screen py-12 px-8">
+        <div class="main-card w-full max-w-none mx-auto p-12">
+            <!-- 顶部导航和标题区域 -->
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center">
+                    <button onclick="window.location.href='/'" class="btn-secondary px-4 py-2 rounded-lg text-sm mr-4">
+                        <i class="fas fa-arrow-left mr-2"></i>返回首页
+                    </button>
+                    <div class="flex items-center">
+                        <img src="/static/images/dami-logo.jpg" alt="大秘Logo" class="w-10 h-10 rounded-lg mr-3 shadow-lg logo-image"
+                             onerror="console.error('Logo failed to load:', this.src)" 
+                             onload="console.log('Logo loaded successfully:', this.src)">
+                        <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" 
+                             alt="Gemini" class="w-10 h-10 mr-3">
+                        <div>
+                            <h1 class="text-2xl font-bold text-white">Google Gemini</h1>
+                            <p class="text-white opacity-70 text-sm">多模态AI模型</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="apiKeyBtn" class="btn-secondary px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-key mr-2"></i>API 密钥设置
+                    </button>
+                </div>
+            </div>
+            
+            <!-- API Key 输入区域 -->
+            <div class="mb-8">
+                <div class="flex justify-center">
+                    <div class="relative">
+                        <label class="block text-white text-sm opacity-90 mb-2">API Key:</label>
+                        <input type="password" id="apiKey" placeholder="请输入您的 Gemini API Key" 
+                               class="api-key-input w-80 pr-12">
+                        <div id="apiKeyStatus" class="absolute right-3 top-8 transform -translate-y-1/2 text-green-400 hidden">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 功能按钮区域 -->
+            <div class="flex justify-center gap-4 mb-8 flex-wrap">
+                <button id="textToImageBtn" class="btn-secondary active px-6 py-3 rounded-xl text-sm font-medium">
+                    <i class="fas fa-globe mr-2"></i>文生图生成
+                </button>
+                <button id="imageEditBtn" class="btn-secondary px-6 py-3 rounded-xl text-sm font-medium">
+                    <i class="fas fa-edit mr-2"></i>图像编辑
+                </button>
+                <button id="imageConcatenateBtn" class="btn-secondary px-6 py-3 rounded-xl text-sm font-medium">
+                    <i class="fas fa-images mr-2"></i>拼接素材
+                </button>
+                <button id="textToVideoBtn" class="btn-secondary px-6 py-3 rounded-xl text-sm font-medium">
+                    <i class="fas fa-video mr-2"></i>文生视频
+                </button>
+                <button id="imageToVideoBtn" class="btn-secondary px-6 py-3 rounded-xl text-sm font-medium">
+                    <i class="fas fa-photo-video mr-2"></i>图生视频
+                </button>
+            </div>
+
+            <!-- 功能区域 -->
+            <div class="feature-card p-8">
+                <!-- 文本生成图片 -->
+                <div id="textToImageSection" class="function-section">
+                    <h3 class="text-xl font-semibold text-white mb-6">
+                        <i class="fas fa-globe mr-2"></i>文生图生成
+                    </h3>
+                    <form id="textToImageForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">描述您想要生成的图片（英文描述会更易于理解）</label>
+                            <textarea id="imagePrompt" rows="4" placeholder="Describe the image you want to generate (English prompts work better)" 
+                                      class="input-field w-full rounded-xl p-4 resize-none"></textarea>
+                            <p class="text-xs text-blue-300 mt-2 opacity-80">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                建议使用英文描述以获得更好的生成效果
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">宽高比</label>
+                            <select id="imageAspectRatio" class="input-field w-full rounded-xl p-3">
+                                <option value="1:1">1:1 (正方形)</option>
+                                <option value="16:9">16:9 (宽屏)</option>
+                                <option value="9:16">9:16 (竖屏)</option>
+                                <option value="4:3">4:3 (标准)</option>
+                                <option value="3:4">3:4 (竖版)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                            <i class="fas fa-magic mr-2"></i>Generate Image
+                        </button>
+                    </form>
+                    <div id="imageResult" class="mt-6 hidden">
+                        <h4 class="font-medium text-white mb-4 opacity-90">生成结果</h4>
+                        <div id="imageGallery" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+                    </div>
+                </div>
+
+                <!-- 图像编辑 -->
+                <div id="imageEditSection" class="function-section hidden">
+                    <h3 class="text-xl font-semibold text-white mb-6">
+                        <i class="fas fa-edit mr-2"></i>图像编辑
+                    </h3>
+                    <form id="imageEditForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">编辑提示词</label>
+                            <textarea id="editPrompt" rows="4" placeholder="描述您想要对图片进行的编辑..." 
+                                      class="input-field w-full rounded-xl p-4 resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">上传图片</label>
+                            <div class="file-upload-area p-8 text-center">
+                                <i class="fas fa-cloud-upload-alt text-white text-4xl mb-4 opacity-60"></i>
+                                <div class="text-white">
+                                    <label for="editImageUpload" class="cursor-pointer font-medium text-purple-300 hover:text-purple-200">
+                                        点击上传图片
+                                    </label>
+                                    <input id="editImageUpload" name="image" type="file" accept="image/*" class="sr-only">
+                                    <p class="text-sm opacity-70 mt-2">或拖拽到此处</p>
+                                    <p class="text-xs opacity-50 mt-1">PNG, JPG, GIF 最大 100MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                            <i class="fas fa-magic mr-2"></i>编辑图片
+                        </button>
+                    </form>
+                    <div id="editResult" class="mt-6 hidden">
+                        <h4 class="font-medium text-white mb-4 opacity-90">编辑结果</h4>
+                        <div id="editImageDisplay" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 图片拼接 -->
+                <div id="imageConcatenateSection" class="function-section hidden">
+                    <h3 class="text-xl font-semibold text-white mb-6">
+                        <i class="fas fa-images mr-2"></i>拼接素材
+                    </h3>
+                    <form id="imageConcatenateForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">上传多张图片（至少2张）</label>
+                            <div class="file-upload-area p-8 text-center">
+                                <i class="fas fa-images text-white text-4xl mb-4 opacity-60"></i>
+                                <div class="text-white">
+                                    <label for="concatenateImageUpload" class="cursor-pointer font-medium text-purple-300 hover:text-purple-200">
+                                        点击上传图片
+                                    </label>
+                                    <input id="concatenateImageUpload" name="images" type="file" accept="image/*" multiple class="sr-only">
+                                    <p class="text-sm opacity-70 mt-2">或拖拽到此处</p>
+                                    <p class="text-xs opacity-50 mt-1">PNG, JPG, GIF 最大 100MB，支持多选</p>
+                                </div>
+                            </div>
+                            <div id="concatenateImagePreview" class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 hidden">
+                                <h4 class="col-span-full font-medium text-white mb-2 opacity-90">已选择的图片：</h4>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                            <i class="fas fa-th mr-2"></i>横向拼接图片
+                        </button>
+                    </form>
+                    <div id="concatenateResult" class="mt-6 hidden">
+                        <h4 class="font-medium text-white mb-4 opacity-90">拼接结果</h4>
+                        <div id="concatenateImageDisplay" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 文本生成视频 -->
+                <div id="textToVideoSection" class="function-section hidden">
+                    <h3 class="text-xl font-semibold text-white mb-6">
+                        <i class="fas fa-video mr-2"></i>文生视频
+                    </h3>
+                    <form id="textToVideoForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">描述您想要生成的视频</label>
+                            <textarea id="videoPrompt" rows="4" placeholder="描述您想要生成的视频..." 
+                                      class="input-field w-full rounded-xl p-4 resize-none"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">宽高比</label>
+                                <select id="videoAspectRatio" class="input-field w-full rounded-xl p-3">
+                                    <option value="16:9">16:9 (宽屏)</option>
+                                    <option value="9:16">9:16 (竖屏)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">分辨率</label>
+                                <select id="videoResolution" class="input-field w-full rounded-xl p-3">
+                                    <option value="720p">720p</option>
+                                    <option value="1080p">1080p</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">时长</label>
+                                <select id="videoDuration" class="input-field w-full rounded-xl p-3">
+                                    <option value="5">5秒</option>
+                                    <option value="8" selected>8秒</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">人物生成</label>
+                                <select id="personGeneration" class="input-field w-full rounded-xl p-3">
+                                    <option value="allow_adult">允许成人</option>
+                                    <option value="dont_allow">禁止人物</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">负面提示词</label>
+                            <input type="text" id="negativePrompt" placeholder="描述不想要的内容..." 
+                                   class="input-field w-full rounded-xl p-3">
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                            <i class="fas fa-play mr-2"></i>生成视频
+                        </button>
+                    </form>
+                    <div id="textVideoResult" class="mt-6 hidden">
+                        <h4 class="font-medium text-white mb-4 opacity-90">生成结果</h4>
+                        <div id="textVideoPlayer"></div>
+                    </div>
+                </div>
+
+                <!-- 图片生成视频 -->
+                <div id="imageToVideoSection" class="function-section hidden">
+                    <h3 class="text-xl font-semibold text-white mb-6">
+                        <i class="fas fa-photo-video mr-2"></i>图生视频
+                    </h3>
+                    <form id="imageToVideoForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">描述基于图片要生成的视频</label>
+                            <textarea id="imageVideoPrompt" rows="4" placeholder="描述基于图片要生成的视频..." 
+                                      class="input-field w-full rounded-xl p-4 resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">上传图片</label>
+                            <div class="file-upload-area p-8 text-center">
+                                <i class="fas fa-cloud-upload-alt text-white text-4xl mb-4 opacity-60"></i>
+                                <div class="text-white">
+                                    <label for="imageUpload" class="cursor-pointer font-medium text-purple-300 hover:text-purple-200">
+                                        点击上传图片
+                                    </label>
+                                    <input id="imageUpload" name="image" type="file" accept="image/*" class="sr-only">
+                                    <p class="text-sm opacity-70 mt-2">或拖拽到此处</p>
+                                    <p class="text-xs opacity-50 mt-1">PNG, JPG, GIF 最大 100MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">宽高比</label>
+                                <select id="imageVideoAspectRatio" class="input-field w-full rounded-xl p-3">
+                                    <option value="16:9">16:9 (宽屏)</option>
+                                    <option value="9:16">9:16 (竖屏)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">分辨率</label>
+                                <select id="imageVideoResolution" class="input-field w-full rounded-xl p-3">
+                                    <option value="720p">720p</option>
+                                    <option value="1080p">1080p</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">时长</label>
+                                <select id="imageVideoDuration" class="input-field w-full rounded-xl p-3">
+                                    <option value="5">5秒</option>
+                                    <option value="8" selected>8秒</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-white mb-3 opacity-90">人物生成</label>
+                                <select id="imagePersonGeneration" class="input-field w-full rounded-xl p-3">
+                                    <option value="allow_adult">允许成人</option>
+                                    <option value="dont_allow">禁止人物</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3 opacity-90">负面提示词</label>
+                            <input type="text" id="imageNegativePrompt" placeholder="描述不想要的内容..." 
+                                   class="input-field w-full rounded-xl p-3">
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                            <i class="fas fa-magic mr-2"></i>生成视频
+                        </button>
+                    </form>
+                    <div id="imageVideoResult" class="mt-6 hidden">
+                        <h4 class="font-medium text-white mb-4 opacity-90">生成结果</h4>
+                        <div id="imageVideoPlayer"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-content p-8 flex items-center space-x-4">
+            <div class="loading-spinner"></div>
+            <span class="text-white text-lg font-medium" id="loadingText">处理中...</span>
+        </div>
+    </div>
+
+    <!-- API Key 模态框 -->
+    <div id="apiKeyModal" class="modal-overlay fixed inset-0 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content p-8 w-full max-w-md">
+                <h3 class="text-xl font-semibold text-white mb-6">配置 API Key</h3>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-white mb-3 opacity-90">Gemini API Key</label>
+                    <input type="password" id="modalApiKey" placeholder="请输入您的 Gemini API Key" 
+                           class="input-field w-full rounded-xl p-3">
+                </div>
+                <div class="flex space-x-3">
+                    <button id="saveModalApiKey" class="flex-1 btn-primary py-3 px-4 rounded-xl font-medium">
+                        保存
+                    </button>
+                    <button id="cancelApiKey" class="flex-1 btn-secondary py-3 px-4 rounded-xl font-medium">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

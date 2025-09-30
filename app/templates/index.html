@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大秘模型调用平台</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .main-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%);
+            border-radius: 32px;
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-field {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-secondary.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s ease;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+        
+        .api-key-input {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            font-size: 18px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .api-key-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .api-key-input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+        
+        .api-key-valid {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .logo-image {
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
+            display: block;
+            object-fit: cover;
+        }
+        
+        .logo-image:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 主要内容区域 -->
+    <div class="min-h-screen py-12 px-8">
+        <div class="main-card w-full max-w-none mx-auto p-12">
+            <!-- 顶部标题区域 -->
+            <div class="text-center mb-16">
+                <div class="flex justify-between items-start mb-12">
+                    <div class="text-left">
+                        <div class="flex items-center mb-4">
+                            <img src="/static/images/dami-logo.jpg" alt="大秘Logo" class="w-16 h-16 rounded-lg mr-4 shadow-lg logo-image" 
+                                 onerror="console.error('Logo failed to load:', this.src)" 
+                                 onload="console.log('Logo loaded successfully:', this.src)">
+                            <div>
+                                <p class="text-white text-lg opacity-90 mb-2 font-medium">大秘 AI改变·让AI为业务赋能</p>
+                                <p class="text-white text-base opacity-70">智能化工作流助力企业高效决策与自动化</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h1 class="text-6xl font-bold text-white mb-8 leading-tight">
+                    大秘模型调用平台
+                </h1>
+                <p class="text-white text-2xl opacity-90 max-w-6xl mx-auto leading-relaxed mb-12">
+                    智能化工作流助力企业高效决策与自动化,以更低成本交付可用的数字员工与场景工作流。
+                </p>
+                
+            </div>
+
+            <!-- 模型选择区域 -->
+            <div class="mb-16">
+                <h2 class="text-4xl font-bold text-white text-center mb-12">选择您要使用的大模型</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <!-- Gemini 模型卡片 -->
+                    <div class="model-card feature-card p-8 cursor-pointer transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/gemini'">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" 
+                                     alt="Gemini" class="w-20 h-20 mx-auto">
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">Google Gemini</h3>
+                            <p class="text-white opacity-80 text-base mb-6 leading-relaxed">
+                                支持文生图、图像编辑、图片拼接、文生视频、图生视频、图片分析等功能
+                            </p>
+                            <div class="flex flex-wrap justify-center gap-3">
+                                <span class="bg-purple-500 bg-opacity-30 text-purple-100 px-4 py-2 rounded-full text-sm font-medium">文生图</span>
+                                <span class="bg-blue-500 bg-opacity-30 text-blue-100 px-4 py-2 rounded-full text-sm font-medium">图像编辑</span>
+                                <span class="bg-green-500 bg-opacity-30 text-green-100 px-4 py-2 rounded-full text-sm font-medium">图片拼接</span>
+                                <span class="bg-orange-500 bg-opacity-30 text-orange-100 px-4 py-2 rounded-full text-sm font-medium">文生视频</span>
+                                <span class="bg-pink-500 bg-opacity-30 text-pink-100 px-4 py-2 rounded-full text-sm font-medium">图生视频</span>
+                                <span class="bg-indigo-500 bg-opacity-30 text-indigo-100 px-4 py-2 rounded-full text-sm font-medium">图片分析</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 预留其他模型卡片 -->
+                    <div class="model-card feature-card p-8 opacity-50 cursor-not-allowed">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <i class="fas fa-robot text-white text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">更多模型</h3>
+                            <p class="text-white opacity-70 text-base mb-6 leading-relaxed">
+                                更多大模型正在接入中，敬请期待...
+                            </p>
+                            <div class="flex justify-center">
+                                <span class="bg-gray-500 bg-opacity-30 text-gray-200 px-6 py-3 rounded-full text-base font-medium">即将推出</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="model-card feature-card p-8 opacity-50 cursor-not-allowed">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <i class="fas fa-brain text-white text-5xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">更多模型</h3>
+                            <p class="text-white opacity-70 text-base mb-6 leading-relaxed">
+                                更多大模型正在接入中，敬请期待...
+                            </p>
+                            <div class="flex justify-center">
+                                <span class="bg-gray-500 bg-opacity-30 text-gray-200 px-6 py-3 rounded-full text-base font-medium">即将推出</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 公司介绍区域 -->
+            <div class="feature-card p-12 max-w-7xl mx-auto">
+                <div class="text-center">
+                    <h2 class="text-5xl font-bold text-white mb-12">关于大秘</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <!-- 高效决策 -->
+                        <div class="feature-card p-6 transform hover:scale-105 transition-all duration-300">
+                            <div class="mb-6">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-rocket text-white text-3xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">高效决策</h3>
+                            <p class="text-white opacity-80 text-base leading-relaxed">
+                                通过智能化工作流，助力企业快速做出准确决策，提升运营效率
+                            </p>
+                        </div>
+                        
+                        <!-- 自动化流程 -->
+                        <div class="feature-card p-6 transform hover:scale-105 transition-all duration-300">
+                            <div class="mb-6">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-cogs text-white text-3xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">自动化流程</h3>
+                            <p class="text-white opacity-80 text-base leading-relaxed">
+                                构建完整的自动化工作流程，减少人工干预，降低运营成本
+                            </p>
+                        </div>
+                        
+                        <!-- 数字员工 -->
+                        <div class="feature-card p-6 transform hover:scale-105 transition-all duration-300">
+                            <div class="mb-6">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-users text-white text-3xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-4">数字员工</h3>
+                            <p class="text-white opacity-80 text-base leading-relaxed">
+                                以更低成本交付可用的数字员工与场景工作流，赋能企业发展
+                            </p>
+                        </div>
+                        
+                        <!-- 联系我们 -->
+                        <div class="feature-card p-6 transform hover:scale-105 transition-all duration-300">
+                            <h3 class="text-2xl font-bold text-white mb-6 mt-2">联系我们</h3>
+                            <div class="bg-white rounded-xl p-3 inline-block mb-4 shadow-xl">
+                                <img src="/static/images/dami-wechat-qrcode.jpg" alt="大秘企业微信二维码" class="w-32 h-32 object-contain">
+                            </div>
+                            <p class="text-white opacity-90 text-sm font-medium mb-1">扫码添加企业微信</p>
+                            <p class="text-white opacity-70 text-xs">了解产品与合作</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-content p-8 flex items-center space-x-4">
+            <div class="loading-spinner"></div>
+            <span class="text-white text-lg font-medium" id="loadingText">处理中...</span>
+        </div>
+    </div>
+
+
+    <script src="/static/js/config.js"></script>
+    <script>
+        // 简化的主页JavaScript
+        class HomePageManager {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                // 主页只需要简单的初始化
+                console.log('大秘模型调用平台主页已加载');
+            }
+        }
+
+        // 初始化主页
+        new HomePageManager();
+    </script>
+</body>
+</html>
+
+
