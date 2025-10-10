@@ -2,6 +2,22 @@
 
 一个美观易用的 Web UI 界面，用于调用大语言模型的各种功能。支持 Gemini API，提供文本生成图片、视频生成、图片分析等功能。
 
+## 🌐 在线体验
+
+体验地址：[https://chanbaoai.cn/webui/](https://chanbaoai.cn/webui/)
+
+## 📸 项目截图
+
+<div align="center">
+  <img src="static/images/dami-index.jpg" alt="项目主界面" width="800"/>
+  <p><b>项目主界面</b></p>
+</div>
+
+<div align="center">
+  <img src="static/images/dami-google.jpg" alt="Gemini功能界面" width="800"/>
+  <p><b>Gemini功能界面</b></p>
+</div>
+
 <div align="center">
   <img src="static/images/dami-wechat-qrcode.jpg" alt="大秘企业微信二维码" width="200"/>
   <p><b>扫码添加大秘企业微信</b></p>

@@ -2,6 +2,22 @@
 
 A beautiful and user-friendly Web UI interface for calling various functions of large language models. Supports Gemini API, providing text-to-image generation, video generation, image analysis and more features.
 
+## 🌐 Online Demo
+
+Demo URL: [https://chanbaoai.cn/webui/](https://chanbaoai.cn/webui/)
+
+## 📸 Screenshots
+
+<div align="center">
+  <img src="static/images/dami-index.jpg" alt="Project Homepage" width="800"/>
+  <p><b>Project Homepage</b></p>
+</div>
+
+<div align="center">
+  <img src="static/images/dami-google.jpg" alt="Gemini Features" width="800"/>
+  <p><b>Gemini Features</b></p>
+</div>
+
 <div align="center">
   <img src="static/images/dami-wechat-qrcode.jpg" alt="Dami Enterprise WeChat QR Code" width="200"/>
   <p><b>Scan to add Dami Enterprise WeChat</b></p>
