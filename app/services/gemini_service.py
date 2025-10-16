@@ -23,7 +23,8 @@ class GeminiService:
         "IMAGE_GENERATION": "gemini-2.5-flash-image-preview",
         "IMAGE_ANALYSIS": "gemini-2.0-flash", 
         "VIDEO_GENERATION": "veo-3.0-generate-001",
-        "VIDEO_GENERATION_FAST": "veo-3.0-fast-generate-001"
+        "VIDEO_GENERATION_FAST": "veo-3.0-fast-generate-001",
+        "VIDEO_EXTENSION": "veo-3.1-generate-preview"
     }
     
     # 支持的参数
@@ -37,10 +38,13 @@ class GeminiService:
             self.api_key = api_key or get_gemini_api_key()
             self.client = None
             self._init_client()
+            # 会话级Video对象缓存 - 用于视频延长功能
+            self._video_cache = {}  # {video_filename: {"video_object": Video, "chain": [filenames]}}
         except Exception as e:
             logger.warning(f"Gemini service initialization failed: {e}")
             self.api_key = api_key
             self.client = None
+            self._video_cache = {}
     
     def _init_client(self):
         """初始化Gemini客户端"""
@@ -210,6 +214,11 @@ class GeminiService:
                 try:
                     filename = self._download_video(video.video, "text_to_video")
                     logger.info(f"成功下载视频 {n}: {filename}")
+                    
+                    # 缓存Video对象，用于后续延长功能
+                    self._cache_video_object(filename, video.video, None)
+                    logger.info(f"Video对象已缓存，可用于延长: {filename}")
+                    
                     return {
                         "success": True,
                         "file": filename,
@@ -301,6 +310,11 @@ class GeminiService:
                 try:
                     filename = self._download_video(video.video, "image_to_video")
                     logger.info(f"成功下载视频 {n}: {filename}")
+                    
+                    # 缓存Video对象，用于后续延长功能
+                    self._cache_video_object(filename, video.video, None)
+                    logger.info(f"Video对象已缓存，可用于延长: {filename}")
+                    
                     return {
                         "success": True,
                         "file": filename,
@@ -468,6 +482,49 @@ class GeminiService:
         except Exception as e:
             logger.error(f"Failed to save video: {e}")
             raise e
+    
+    def _cache_video_object(self, filename: str, video_object, parent_filename: Optional[str] = None):
+        """缓存Video对象用于延长功能
+        
+        Args:
+            filename: 视频文件名
+            video_object: Video对象
+            parent_filename: 父视频文件名（如果是延长的话）
+        """
+        # 构建视频链
+        chain = []
+        if parent_filename and parent_filename in self._video_cache:
+            # 继承父视频的链
+            chain = self._video_cache[parent_filename]["chain"].copy()
+            chain.append(parent_filename)
+        
+        self._video_cache[filename] = {
+            "video_object": video_object,
+            "chain": chain,
+            "timestamp": time.time()
+        }
+        logger.info(f"Video cached: {filename}, chain length: {len(chain)}")
+    
+    def get_video_chain(self, filename: str) -> List[str]:
+        """获取视频的延长历史链
+        
+        Returns:
+            视频文件名列表，按时间顺序排列
+        """
+        if filename not in self._video_cache:
+            return [filename]
+        
+        chain = self._video_cache[filename]["chain"].copy()
+        chain.append(filename)
+        return chain
+    
+    def is_video_extendable(self, filename: str) -> bool:
+        """检查视频是否可以延长
+        
+        Returns:
+            True if video can be extended, False otherwise
+        """
+        return filename in self._video_cache
     
     def edit_image(self, prompt: str, image_data: str) -> Dict[str, Any]:
         """编辑图片 - 使用 Gemini 2.5 Flash Image Preview 模型"""
@@ -716,3 +773,112 @@ class GeminiService:
         
         logger.info(f"Concatenated image saved: {filepath}")
         return f"/outputs/images/{filename}"
+
+    def extend_video(self, filename: str, prompt: str = "", resolution: str = "720p") -> Dict[str, Any]:
+        """延长视频 - 使用 Veo 3.1 模型
+        
+        注意：只能延长当前会话中刚刚生成的视频
+        
+        Args:
+            filename: 视频文件名（不含路径，如"/outputs/videos/xxx.mp4"）
+            prompt: 延长提示词
+            resolution: 分辨率
+            
+        Returns:
+            包含延长后的视频信息和视频链
+        """
+        try:
+            if not self._ensure_client():
+                return {
+                    "success": False,
+                    "error": "Gemini client not initialized",
+                    "message": "Please configure API key first"
+                }
+            
+            logger.info(f"Extending video: {filename}")
+            
+            # 验证分辨率参数
+            if resolution not in self.SUPPORTED_RESOLUTIONS:
+                raise ValueError(f"Unsupported resolution: {resolution}. Supported: {self.SUPPORTED_RESOLUTIONS}")
+            
+            # 检查视频是否在缓存中
+            if not self.is_video_extendable(filename):
+                return {
+                    "success": False,
+                    "error": "Video not extendable",
+                    "message": "此视频无法延长。只能延长当前会话中刚刚生成的视频。请先生成一个新视频，然后立即延长。"
+                }
+            
+            # 从缓存获取Video对象
+            video_object = self._video_cache[filename]["video_object"]
+            logger.info(f"从缓存获取Video对象: {filename}")
+            
+            # 如果没有提供提示词，使用默认的延长提示词
+            if not prompt.strip():
+                prompt = "Extend this video naturally, continuing the action and maintaining the same style and quality."
+            
+            # 调用Veo 3.1 API进行视频延长
+            config_params = {
+                "number_of_videos": 1,
+                "resolution": resolution
+            }
+            
+            config = types.GenerateVideosConfig(**config_params)
+            
+            # 详细日志记录
+            logger.info(f"=== 视频延长API调用详情 ===")
+            logger.info(f"模型: {self.MODELS['VIDEO_EXTENSION']}")
+            logger.info(f"提示词: {prompt[:100]}...")
+            logger.info(f"原视频: {filename}")
+            logger.info(f"配置参数: {config_params}")
+            
+            # 调用API
+            operation = self.client.models.generate_videos(
+                model=self.MODELS["VIDEO_EXTENSION"],
+                video=video_object,
+                prompt=prompt,
+                config=config
+            )
+            
+            logger.info(f"API调用成功，等待视频延长完成...")
+            
+            # 等待视频延长完成
+            while not operation.done:
+                logger.info("Waiting for video extension to complete...")
+                time.sleep(10)
+                operation = self.client.operations.get(operation)
+            
+            # 下载延长后的视频
+            if not operation.response.generated_videos:
+                raise Exception("无法延长视频")
+            
+            # 处理延长后的视频
+            for n, extended_video in enumerate(operation.response.generated_videos):
+                try:
+                    new_filename = self._download_video(extended_video.video, "extended_video")
+                    logger.info(f"成功下载延长视频 {n}: {new_filename}")
+                    
+                    # 缓存延长后的Video对象，并记录父视频
+                    self._cache_video_object(new_filename, extended_video.video, filename)
+                    
+                    # 获取完整的视频链
+                    video_chain = self.get_video_chain(new_filename)
+                    logger.info(f"视频链: {video_chain}")
+                    
+                    return {
+                        "success": True,
+                        "file": new_filename,
+                        "chain": video_chain,
+                        "message": "Video extended successfully"
+                    }
+                except Exception as e:
+                    logger.error(f"下载延长视频 {n} 失败: {str(e)}")
+                    raise e
+            
+        except Exception as e:
+            logger.error(f"Video extension failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Video extension failed: {str(e)}"
+            }

@@ -4,6 +4,8 @@ class WebUIManager {
     constructor() {
         this.apiKey = localStorage.getItem('gemini_api_key') || '';
         this.currentSection = 'textToImageSection';
+        this.currentVideoChain = null; // 当前视频链
+        this.pendingExtendType = null; // 待延长视频的类型
         this.init();
     }
 
@@ -34,6 +36,36 @@ class WebUIManager {
         const cancelApiKey = document.getElementById('cancelApiKey');
         if (cancelApiKey) {
             cancelApiKey.addEventListener('click', () => this.hideApiKeyModal());
+        }
+        
+        const clearApiKey = document.getElementById('clearApiKey');
+        if (clearApiKey) {
+            clearApiKey.addEventListener('click', () => this.showConfirmClearModal());
+        }
+        
+        const clearMainApiKey = document.getElementById('clearMainApiKey');
+        if (clearMainApiKey) {
+            clearMainApiKey.addEventListener('click', () => this.showConfirmClearModal());
+        }
+        
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+        if (confirmClearBtn) {
+            confirmClearBtn.addEventListener('click', () => this.confirmClearApiKey());
+        }
+        
+        const cancelClearBtn = document.getElementById('cancelClearBtn');
+        if (cancelClearBtn) {
+            cancelClearBtn.addEventListener('click', () => this.hideConfirmClearModal());
+        }
+        
+        const cancelExtendBtn = document.getElementById('cancelExtendBtn');
+        if (cancelExtendBtn) {
+            cancelExtendBtn.addEventListener('click', () => this.hideExtendPromptModal());
+        }
+        
+        const confirmExtendBtn = document.getElementById('confirmExtendBtn');
+        if (confirmExtendBtn) {
+            confirmExtendBtn.addEventListener('click', () => this.confirmExtendVideo());
         }
         
         // 为主输入框添加失去焦点时自动保存功能
@@ -98,6 +130,38 @@ class WebUIManager {
         const imageConcatenateForm = document.getElementById('imageConcatenateForm');
         if (imageConcatenateForm) {
             imageConcatenateForm.addEventListener('submit', (e) => this.handleImageConcatenate(e));
+        }
+        
+        // 延长按钮事件
+        const extendTextVideoBtn = document.getElementById('extendTextVideoBtn');
+        if (extendTextVideoBtn) {
+            extendTextVideoBtn.addEventListener('click', () => this.handleExtendCurrentVideo('textVideo'));
+        }
+        
+        const extendImageVideoBtn = document.getElementById('extendImageVideoBtn');
+        if (extendImageVideoBtn) {
+            extendImageVideoBtn.addEventListener('click', () => this.handleExtendCurrentVideo('imageVideo'));
+        }
+        
+        // 下载按钮事件
+        const downloadTextVideoCurrentBtn = document.getElementById('downloadTextVideoCurrentBtn');
+        if (downloadTextVideoCurrentBtn) {
+            downloadTextVideoCurrentBtn.addEventListener('click', () => this.downloadCurrentVideo('textVideo'));
+        }
+        
+        const downloadTextVideoLatestBtn = document.getElementById('downloadTextVideoLatestBtn');
+        if (downloadTextVideoLatestBtn) {
+            downloadTextVideoLatestBtn.addEventListener('click', () => this.downloadLatestVideo('textVideo'));
+        }
+        
+        const downloadImageVideoCurrentBtn = document.getElementById('downloadImageVideoCurrentBtn');
+        if (downloadImageVideoCurrentBtn) {
+            downloadImageVideoCurrentBtn.addEventListener('click', () => this.downloadCurrentVideo('imageVideo'));
+        }
+        
+        const downloadImageVideoLatestBtn = document.getElementById('downloadImageVideoLatestBtn');
+        if (downloadImageVideoLatestBtn) {
+            downloadImageVideoLatestBtn.addEventListener('click', () => this.downloadLatestVideo('imageVideo'));
         }
 
         // 模型选择事件
@@ -186,6 +250,39 @@ class WebUIManager {
             modal.classList.add('hidden');
         }
     }
+    
+    showConfirmClearModal() {
+        const modal = document.getElementById('confirmClearModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+    
+    hideConfirmClearModal() {
+        const modal = document.getElementById('confirmClearModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    showExtendPromptModal(type) {
+        this.pendingExtendType = type; // 保存要延长的视频类型
+        const modal = document.getElementById('extendPromptModal');
+        const input = document.getElementById('extendPromptInput');
+        if (modal && input) {
+            input.value = ''; // 清空上次输入
+            modal.classList.remove('hidden');
+            input.focus();
+        }
+    }
+    
+    hideExtendPromptModal() {
+        const modal = document.getElementById('extendPromptModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        this.pendingExtendType = null;
+    }
 
     saveApiKey() {
         const apiKeyInput = document.getElementById('apiKey');
@@ -224,6 +321,38 @@ class WebUIManager {
         this.updateApiKeyStatus(true);
         this.hideApiKeyModal();
         this.showNotification('API Key 保存成功', 'success');
+    }
+    
+    confirmClearApiKey() {
+        // 清除内存中的API Key
+        this.apiKey = '';
+        
+        // 清除localStorage
+        localStorage.removeItem('gemini_api_key');
+        
+        // 清除主页面输入框
+        const apiKeyInput = document.getElementById('apiKey');
+        if (apiKeyInput) {
+            apiKeyInput.value = '';
+        }
+        
+        // 清除模态框输入框
+        const modalApiKeyInput = document.getElementById('modalApiKey');
+        if (modalApiKeyInput) {
+            modalApiKeyInput.value = '';
+        }
+        
+        // 更新状态显示
+        this.updateApiKeyStatus(false);
+        
+        // 关闭所有模态框
+        this.hideApiKeyModal();
+        this.hideConfirmClearModal();
+        
+        // 清除视频缓存（因为API Key变了，Video对象也失效了）
+        this.currentVideoChain = null;
+        
+        this.showNotification('API Key 已清除', 'success');
     }
 
     autoSaveApiKey() {
@@ -441,7 +570,15 @@ class WebUIManager {
             this.hideLoading();
 
             if (result.success) {
-                this.displayVideo(result.data.file, 'textVideoPlayer');
+                const filename = result.data.file;
+                // 初始化视频链
+                this.currentVideoChain = {
+                    type: 'textVideo',  // 修正类型名称
+                    chain: [filename],
+                    currentIndex: 0
+                };
+                // 显示视频和轨道
+                this.displayVideoWithTrack(filename, 'textVideoPlayer', 'textVideoTrack', 'textVideo');
                 this.showNotification('视频生成成功', 'success');
                 document.getElementById('textVideoResult').classList.remove('hidden');
             } else {
@@ -495,7 +632,15 @@ class WebUIManager {
             this.hideLoading();
 
             if (result.success) {
-                this.displayVideo(result.data.file, 'imageVideoPlayer');
+                const filename = result.data.file;
+                // 初始化视频链
+                this.currentVideoChain = {
+                    type: 'imageVideo',  // 修正类型名称
+                    chain: [filename],
+                    currentIndex: 0
+                };
+                // 显示视频和轨道
+                this.displayVideoWithTrack(filename, 'imageVideoPlayer', 'imageVideoTrack', 'imageVideo');
                 this.showNotification('视频生成成功', 'success');
                 document.getElementById('imageVideoResult').classList.remove('hidden');
             } else {
@@ -617,6 +762,9 @@ class WebUIManager {
     }
 
 
+
+
+
     displayImages(imageUrls) {
         const gallery = document.getElementById('imageGallery');
         gallery.innerHTML = '';
@@ -656,6 +804,251 @@ class WebUIManager {
                 </div>
             </div>
         `;
+    }
+    
+    displayVideoWithTrack(filename, playerContainerId, trackContainerId, prefix) {
+        // 显示视频播放器
+        this.displayVideo(filename, playerContainerId);
+        
+        // 显示视频轨道
+        this.renderVideoTrack(trackContainerId, prefix);
+    }
+    
+    renderVideoTrack(trackContainerId, prefix) {
+        if (!this.currentVideoChain || this.currentVideoChain.chain.length === 0) {
+            return;
+        }
+        
+        const trackContainer = document.getElementById(trackContainerId);
+        const chain = this.currentVideoChain.chain;
+        const currentIndex = this.currentVideoChain.currentIndex;
+        
+        let trackHTML = '';
+        for (let i = 0; i < chain.length; i++) {
+            const isActive = i === currentIndex;
+            const activeClass = isActive ? 'active' : '';
+            
+            // 只有非第一个视频才能删除（保留原始视频）
+            const canDelete = i > 0;
+            const deleteButton = canDelete ? `
+                <button class="video-track-delete" onclick="webUI.removeVideoFromChain(${i}, '${prefix}'); event.stopPropagation();" title="删除此视频及之后的所有延长">
+                    <i class="fas fa-times"></i>
+                </button>
+            ` : '';
+            
+            trackHTML += `
+                <div class="video-track-item ${activeClass}" data-index="${i}" data-filename="${chain[i]}">
+                    <video class="video-track-thumbnail" muted>
+                        <source src="${chain[i]}" type="video/mp4">
+                    </video>
+                    <div class="video-track-label">#${i + 1}</div>
+                    <button class="video-track-download" onclick="webUI.downloadFile('${chain[i]}', 'video_${i + 1}.mp4'); event.stopPropagation();" title="下载此视频">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    ${deleteButton}
+                </div>
+            `;
+            
+            if (i < chain.length - 1) {
+                trackHTML += '<div class="video-track-arrow"><i class="fas fa-arrow-right"></i></div>';
+            }
+        }
+        
+        const innerContainer = trackContainer.querySelector('.flex');
+        if (innerContainer) {
+            innerContainer.innerHTML = trackHTML;
+            
+            // 添加点击事件 - 切换到对应的视频
+            innerContainer.querySelectorAll('.video-track-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    const filename = item.dataset.filename;
+                    this.switchToVideoInChain(index, filename, `${prefix}Player`);
+                });
+            });
+            
+            // 视频缩略图悬停播放
+            innerContainer.querySelectorAll('.video-track-thumbnail').forEach(video => {
+                video.addEventListener('mouseenter', () => {
+                    video.currentTime = 1;
+                    video.play().catch(() => {});
+                });
+                video.addEventListener('mouseleave', () => {
+                    video.pause();
+                    video.currentTime = 1;
+                });
+            });
+        }
+    }
+    
+    switchToVideoInChain(index, filename, playerContainerId) {
+        this.currentVideoChain.currentIndex = index;
+        this.displayVideo(filename, playerContainerId);
+        
+        // 更新轨道UI
+        const trackContainer = document.getElementById(playerContainerId.replace('Player', 'Track'));
+        if (trackContainer) {
+            trackContainer.querySelectorAll('.video-track-item').forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+    }
+    
+    async handleExtendCurrentVideo(type) {
+        if (!this.apiKey) {
+            this.showNotification('请先配置 API Key', 'error');
+            this.showApiKeyModal();
+            return;
+        }
+        
+        if (!this.currentVideoChain || this.currentVideoChain.type !== type) {
+            this.showNotification('没有可延长的视频', 'error');
+            return;
+        }
+        
+        // 显示自定义提示词输入框
+        this.showExtendPromptModal(type);
+    }
+    
+    async confirmExtendVideo() {
+        try {
+            const type = this.pendingExtendType;
+            if (!type) {
+                return;
+            }
+            
+            // 获取输入的提示词
+            const promptInput = document.getElementById('extendPromptInput');
+            const prompt = promptInput ? promptInput.value.trim() : '';
+            
+            // 关闭模态框
+            this.hideExtendPromptModal();
+            
+            const chain = this.currentVideoChain.chain;
+            const currentFilename = chain[chain.length - 1]; // 获取最新的视频
+            
+            this.showLoading('正在延长视频...');
+            const response = await fetch(CONFIG.ENDPOINTS.GEMINI.EXTEND_VIDEO, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    filename: currentFilename,
+                    prompt: prompt,
+                    resolution: '720p',
+                    api_key: this.apiKey
+                })
+            });
+            
+            const result = await response.json();
+            this.hideLoading();
+            
+            if (result.success) {
+                // 将新视频添加到链中
+                this.currentVideoChain.chain.push(result.data.file);
+                this.currentVideoChain.currentIndex = this.currentVideoChain.chain.length - 1;
+                
+                // 更新显示
+                const prefix = type === 'textVideo' ? 'textVideo' : 'imageVideo';
+                this.displayVideoWithTrack(result.data.file, `${prefix}Player`, `${prefix}Track`, prefix);
+                
+                this.showNotification(`视频延长成功！当前链长度：${this.currentVideoChain.chain.length}`, 'success');
+                
+                // 更新延长信息
+                const infoEl = document.getElementById(`${prefix}ExtendInfo`);
+                if (infoEl) {
+                    const remaining = 20 - (this.currentVideoChain.chain.length - 1);
+                    infoEl.textContent = `已延长 ${this.currentVideoChain.chain.length - 1} 次，还可延长 ${remaining} 次`;
+                }
+            } else {
+                this.showNotification(result.message || '视频延长失败', 'error');
+            }
+        } catch (error) {
+            this.hideLoading();
+            this.showNotification('请求失败: ' + error.message, 'error');
+        }
+    }
+    
+    downloadCurrentVideo(type) {
+        if (!this.currentVideoChain || this.currentVideoChain.type !== type) {
+            this.showNotification('没有可下载的视频', 'error');
+            return;
+        }
+        
+        const currentIndex = this.currentVideoChain.currentIndex;
+        const currentFilename = this.currentVideoChain.chain[currentIndex];
+        
+        // 提取文件名
+        const filename = currentFilename.split('/').pop();
+        const displayName = `video_${currentIndex + 1}_${filename}`;
+        
+        this.downloadFile(currentFilename, displayName);
+        this.showNotification(`正在下载第 ${currentIndex + 1} 个视频...`, 'success');
+    }
+    
+    downloadLatestVideo(type) {
+        if (!this.currentVideoChain || this.currentVideoChain.type !== type) {
+            this.showNotification('没有可下载的视频', 'error');
+            return;
+        }
+        
+        const chain = this.currentVideoChain.chain;
+        const latestFilename = chain[chain.length - 1];
+        
+        // 提取文件名
+        const filename = latestFilename.split('/').pop();
+        const displayName = `latest_video_${filename}`;
+        
+        this.downloadFile(latestFilename, displayName);
+        this.showNotification('正在下载最新视频...', 'success');
+    }
+    
+    removeVideoFromChain(index, prefix) {
+        if (!this.currentVideoChain) {
+            this.showNotification('没有可操作的视频链', 'error');
+            return;
+        }
+        
+        // 不能删除第一个视频（原始视频）
+        if (index === 0) {
+            this.showNotification('无法删除原始视频', 'error');
+            return;
+        }
+        
+        const chain = this.currentVideoChain.chain;
+        const deletedCount = chain.length - index;
+        
+        // 确认删除
+        const confirmMsg = `确定要删除视频 #${index + 1} 及之后的所有延长吗？\n这将删除 ${deletedCount} 个视频。`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        // 删除从index开始到末尾的所有视频
+        this.currentVideoChain.chain = chain.slice(0, index);
+        
+        // 如果当前播放的视频被删除了，切换到最后一个保留的视频
+        if (this.currentVideoChain.currentIndex >= index) {
+            this.currentVideoChain.currentIndex = this.currentVideoChain.chain.length - 1;
+        }
+        
+        // 更新显示
+        const lastVideo = this.currentVideoChain.chain[this.currentVideoChain.chain.length - 1];
+        this.displayVideoWithTrack(lastVideo, `${prefix}Player`, `${prefix}Track`, prefix);
+        
+        // 更新延长信息
+        const infoEl = document.getElementById(`${prefix}ExtendInfo`);
+        if (infoEl) {
+            const remaining = 20 - (this.currentVideoChain.chain.length - 1);
+            infoEl.textContent = `已延长 ${this.currentVideoChain.chain.length - 1} 次，还可延长 ${remaining} 次`;
+        }
+        
+        this.showNotification(`已删除 ${deletedCount} 个视频，可以重新延长`, 'success');
     }
 
 

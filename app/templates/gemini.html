@@ -182,6 +182,125 @@
             border-color: rgba(255, 255, 255, 0.4);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
+        
+        .video-preview {
+            transition: all 0.3s ease;
+        }
+        
+        .video-preview:hover {
+            transform: scale(1.02);
+        }
+        
+        .video-item.selected {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        .video-thumbnail {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        }
+        
+        /* 视频轨道样式 */
+        .video-track-item {
+            flex-shrink: 0;
+            width: 120px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .video-track-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .video-track-item.active {
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.8);
+            transform: scale(1.08);
+        }
+        
+        .video-track-thumbnail {
+            width: 100%;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-track-label {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .video-track-arrow {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .video-track-download {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        .video-track-item:hover .video-track-download {
+            opacity: 1;
+        }
+        
+        .video-track-download:hover {
+            background: rgba(139, 92, 246, 0.9);
+            transform: scale(1.1);
+        }
+        
+        .video-track-delete {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(220, 38, 38, 0.8);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        .video-track-item:hover .video-track-delete {
+            opacity: 1;
+        }
+        
+        .video-track-delete:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -215,7 +334,7 @@
             
             <!-- API Key 输入区域 -->
             <div class="mb-8">
-                <div class="flex justify-center">
+                <div class="flex justify-center items-end gap-3">
                     <div class="relative">
                         <label class="block text-white text-sm opacity-90 mb-2">API Key:</label>
                         <input type="password" id="apiKey" placeholder="请输入您的 Gemini API Key" 
@@ -224,6 +343,9 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                     </div>
+                    <button id="clearMainApiKey" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all" title="清除API Key">
+                        <i class="fas fa-trash mr-2"></i>清除
+                    </button>
                 </div>
             </div>
 
@@ -403,7 +525,34 @@
                     </form>
                     <div id="textVideoResult" class="mt-6 hidden">
                         <h4 class="font-medium text-white mb-4 opacity-90">生成结果</h4>
+                        <!-- 视频轨道 - 显示延长历史 -->
+                        <div id="textVideoTrack" class="mb-4 p-4 bg-gray-800 bg-opacity-50 rounded-lg">
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+                                <!-- 视频链将在这里动态添加 -->
+                            </div>
+                        </div>
+                        <!-- 当前视频播放器 -->
                         <div id="textVideoPlayer"></div>
+                        <!-- 延长和下载按钮 -->
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <button id="extendTextVideoBtn" class="btn-primary px-6 py-3 rounded-lg">
+                                    <i class="fas fa-expand-arrows-alt mr-2"></i>延长此视频
+                                </button>
+                                <span class="text-sm text-gray-400" id="textVideoExtendInfo"></span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <button id="downloadTextVideoCurrentBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all">
+                                    <i class="fas fa-download mr-2"></i>下载当前视频
+                                </button>
+                                <button id="downloadTextVideoLatestBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all">
+                                    <i class="fas fa-star mr-2"></i>下载最新视频
+                                </button>
+                                <button id="downloadTextVideoAllBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all hidden" title="下载所有视频（ZIP打包）">
+                                    <i class="fas fa-folder-open mr-2"></i>下载全部
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -473,7 +622,34 @@
                     </form>
                     <div id="imageVideoResult" class="mt-6 hidden">
                         <h4 class="font-medium text-white mb-4 opacity-90">生成结果</h4>
+                        <!-- 视频轨道 - 显示延长历史 -->
+                        <div id="imageVideoTrack" class="mb-4 p-4 bg-gray-800 bg-opacity-50 rounded-lg">
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+                                <!-- 视频链将在这里动态添加 -->
+                            </div>
+                        </div>
+                        <!-- 当前视频播放器 -->
                         <div id="imageVideoPlayer"></div>
+                        <!-- 延长和下载按钮 -->
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <button id="extendImageVideoBtn" class="btn-primary px-6 py-3 rounded-lg">
+                                    <i class="fas fa-expand-arrows-alt mr-2"></i>延长此视频
+                                </button>
+                                <span class="text-sm text-gray-400" id="imageVideoExtendInfo"></span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <button id="downloadImageVideoCurrentBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all">
+                                    <i class="fas fa-download mr-2"></i>下载当前视频
+                                </button>
+                                <button id="downloadImageVideoLatestBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all">
+                                    <i class="fas fa-star mr-2"></i>下载最新视频
+                                </button>
+                                <button id="downloadImageVideoAllBtn" class="glass-effect px-4 py-2 rounded-lg text-white text-sm hover:bg-white hover:bg-opacity-20 transition-all hidden" title="下载所有视频（ZIP打包）">
+                                    <i class="fas fa-folder-open mr-2"></i>下载全部
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -489,6 +665,63 @@
         </div>
     </div>
 
+    <!-- 确认清除API Key模态框 -->
+    <div id="confirmClearModal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-content p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">确认清除 API Key</h3>
+                <p class="text-sm text-gray-300 opacity-90">
+                    确定要清除已保存的 API Key 吗？<br>
+                    清除后需要重新输入才能使用功能。
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <button id="confirmClearBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-medium transition-all">
+                    <i class="fas fa-trash mr-2"></i>确认清除
+                </button>
+                <button id="cancelClearBtn" class="flex-1 btn-secondary py-3 px-4 rounded-xl font-medium">
+                    <i class="fas fa-times mr-2"></i>取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 延长视频提示词输入模态框 -->
+    <div id="extendPromptModal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="modal-content p-8 w-full max-w-lg">
+            <h3 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-expand-arrows-alt mr-2"></i>延长视频
+            </h3>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-white mb-3 opacity-90">延长提示词（可选）</label>
+                <textarea id="extendPromptInput" rows="5" 
+                          placeholder="描述您希望视频如何延长...&#10;例如：镜头继续跟随，猫走向花丛，特写花朵&#10;&#10;留空则使用默认延长逻辑" 
+                          class="input-field w-full rounded-xl p-4 resize-none"></textarea>
+                <div class="mt-3 space-y-2">
+                    <p class="text-xs text-blue-300 opacity-80">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        提示：延长功能会将视频延长约7秒，最多可延长20次
+                    </p>
+                    <p class="text-xs text-green-300 opacity-80">
+                        <i class="fas fa-lightbulb mr-1"></i>
+                        建议：提示词应承接前一段内容，保持连贯性
+                    </p>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button id="confirmExtendBtn" class="flex-1 btn-primary py-3 px-4 rounded-xl font-medium">
+                    <i class="fas fa-check mr-2"></i>确认延长
+                </button>
+                <button id="cancelExtendBtn" class="flex-1 btn-secondary py-3 px-4 rounded-xl font-medium">
+                    <i class="fas fa-times mr-2"></i>取消
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- API Key 模态框 -->
     <div id="apiKeyModal" class="modal-overlay fixed inset-0 overflow-y-auto h-full w-full z-50 hidden">
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -501,10 +734,13 @@
                 </div>
                 <div class="flex space-x-3">
                     <button id="saveModalApiKey" class="flex-1 btn-primary py-3 px-4 rounded-xl font-medium">
-                        保存
+                        <i class="fas fa-save mr-2"></i>保存
+                    </button>
+                    <button id="clearApiKey" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-medium transition-all">
+                        <i class="fas fa-trash mr-2"></i>清除
                     </button>
                     <button id="cancelApiKey" class="flex-1 btn-secondary py-3 px-4 rounded-xl font-medium">
-                        取消
+                        <i class="fas fa-times mr-2"></i>取消
                     </button>
                 </div>
             </div>

@@ -1,12 +1,32 @@
+# ========================================
+# Nanobanana Web UI - 依赖包清单
+# ========================================
+# 更新日期：2025-10-16
+# Python 版本要求：>= 3.8
+#
+# 核心功能支持：
+# ✓ Gemini API 图像生成 (Imagen 3)
+# ✓ Gemini API 视频生成 (Veo 3.0/3.1)  
+# ✓ Veo 3.1 视频延长功能
+# ✓ 视频链管理、预览和下载
+# ✓ 自定义 API Key 管理
+#
+# 安装方法：
+# pip install -r requirements.txt
+#
+# 精确版本锁定文件：
+# requirements.lock.txt (使用 pip freeze 生成)
+# ========================================
+
 # FastAPI Core Dependencies
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
 python-multipart==0.0.6
 jinja2==3.1.2
 starlette>=0.41.0
 
-# Gemini API Dependencies
-google-genai==1.39.1
+# Gemini API Dependencies (支持 Veo 3.1 视频生成和延长功能)
+google-genai>=1.45.0
 google-auth==2.23.4
 google-auth-oauthlib==1.1.0
 google-auth-httplib2==0.2.0
@@ -88,3 +108,23 @@ pycparser==2.23
 requests-oauthlib==2.0.0
 rsa==4.9.1
 uritemplate==4.2.0
+
+# ========================================
+# 项目说明
+# ========================================
+# 本项目为 Nanobanana Web UI
+# 支持功能：
+# - Gemini 图像生成 (Imagen 3)
+# - Gemini 视频生成 (Veo 3.0/3.1)
+# - Veo 3.1 视频延长功能
+# - 视频链管理和下载
+# 
+# 安装命令：
+# pip install -r requirements.txt
+# 
+# 运行命令：
+# python -m app.main
+# 或使用提供的启动脚本：
+# - Linux/Mac: ./run.sh
+# - Windows: run.bat 或 run.ps1
+# ========================================

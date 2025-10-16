@@ -19,7 +19,10 @@ const CONFIG = {
             GENERATE_VIDEO_IMAGE: '/api/v1/gemini/generate/video/image',
             EDIT_IMAGE: '/api/v1/gemini/edit/image',
             CONCATENATE_IMAGES: '/api/v1/gemini/concatenate/images',
-            ANALYZE_IMAGE: '/api/v1/gemini/analyze/image'
+            ANALYZE_IMAGE: '/api/v1/gemini/analyze/image',
+            EXTEND_VIDEO: '/api/v1/gemini/extend/video',
+            UPLOAD_VIDEO: '/api/v1/gemini/upload/video',
+            LIST_VIDEOS: '/api/v1/gemini/files/videos'
         }
     },
     

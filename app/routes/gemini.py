@@ -47,6 +47,13 @@ class ImageConcatenateRequest(BaseModel):
     api_key: Optional[str] = None
 
 
+class VideoExtendRequest(BaseModel):
+    filename: str  # 视频文件名（如"/outputs/videos/xxx.mp4"）
+    prompt: Optional[str] = ""
+    resolution: Optional[str] = "720p"
+    api_key: Optional[str] = None
+
+
 # 响应模型
 class APIResponse(BaseModel):
     success: bool
@@ -218,7 +225,7 @@ async def analyze_image(
         # 动态初始化Gemini服务
         global gemini_service
         if gemini_service is None:
-            gemini_service = GeminiService(api_key)
+            gemini_service = GeminiService(settings.gemini_api_key)
         
         # 分析图片
         result = gemini_service.analyze_image(
@@ -389,4 +396,71 @@ async def concatenate_images(request: ImageConcatenateRequest):
         raise
     except Exception as e:
         logger.error(f"Image concatenation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e) or "Internal server error")
+
+
+@router.post("/upload/video", response_model=APIResponse)
+async def upload_video(video: UploadFile = File(...)):
+    """上传视频文件"""
+    try:
+        logger.info(f"Video upload request: {video.filename}")
+        
+        # 保存上传的视频
+        save_result = file_service.save_uploaded_file(video, "video")
+        if not save_result["success"]:
+            raise HTTPException(status_code=400, detail=save_result["message"])
+        
+        return APIResponse(
+            success=True,
+            message="Video uploaded successfully",
+            data={"file_path": save_result["filepath"]}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Video upload failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e) or "Internal server error")
+
+
+@router.post("/extend/video", response_model=APIResponse)
+async def extend_video(request: VideoExtendRequest):
+    """延长视频 - 只能延长当前会话中刚生成的视频"""
+    try:
+        logger.info(f"Video extension request: {request.filename}")
+        
+        # 获取API Key
+        api_key = request.api_key or settings.gemini_api_key
+        
+        if not api_key:
+            raise HTTPException(status_code=400, detail="API Key is required")
+        
+        # 使用全局的gemini_service实例（会话级）
+        global gemini_service
+        if gemini_service is None:
+            gemini_service = GeminiService(api_key)
+        
+        result = gemini_service.extend_video(
+            filename=request.filename,
+            prompt=request.prompt,
+            resolution=request.resolution
+        )
+        
+        if result["success"]:
+            return APIResponse(
+                success=True,
+                message=result["message"],
+                data={
+                    "file": result["file"],
+                    "chain": result.get("chain", [request.filename, result["file"]])
+                }
+            )
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+            
+    except HTTPException:
+        # 重新抛出HTTPException，不要捕获
+        raise
+    except Exception as e:
+        logger.error(f"Video extension failed: {e}")
         raise HTTPException(status_code=500, detail=str(e) or "Internal server error")
